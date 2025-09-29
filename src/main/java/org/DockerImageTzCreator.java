@@ -105,10 +105,6 @@ public class DockerImageTzCreator {
 		}
 	}
 
-	public void processDockerImage(File tarFile) throws Exception {
-		processDockerImage(tarFile, tarFile.getParentFile());
-	}
-
 	public void processDockerImage(File tarFile, File outputDir) throws Exception {
 		System.out.println("Processing Docker image: " + tarFile.getName());
 
@@ -126,7 +122,11 @@ public class DockerImageTzCreator {
 			// Get original image name and tag
 			String[] imageInfo = getImageNameAndTag(tempDir);
 			String imageName = imageInfo[0];
+			if (imageName == null)
+				imageName = tarFile.getName().substring(0, tarFile.getName().indexOf(".tar"));
 			String imageTag = imageInfo[1];
+			if (imageTag == null)
+				imageTag = "latest";
 
 			// Create new build directory
 			Path buildDir = Files.createTempDirectory("docker-build");
@@ -224,7 +224,7 @@ public class DockerImageTzCreator {
 
 			TarArchiveEntry entry;
 			while ((entry = tais.getNextTarEntry()) != null) {
-				if (entry.getName().equals("opt/app/app.jar") || entry.getName().endsWith("/app.jar")) {
+				if (entry.getName().equals("opt/app/app.jar") || entry.getName().endsWith(".jar")) {
 
 					File jarFile = new File(tempLayerDir.toFile(), "app.jar");
 					try (FileOutputStream fos = new FileOutputStream(jarFile)) {
@@ -263,8 +263,7 @@ public class DockerImageTzCreator {
 			}
 		}
 
-		// Fallback to generic name
-		return new String[] { "extracted-image", "latest" };
+		return new String[] { null, null };
 	}
 
 	private void buildDockerImage(Path buildDir, String imageName, String imageTag) throws Exception {
